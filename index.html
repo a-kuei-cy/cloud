@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>意見收集與文字雲生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .input-section, .wordcloud-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .input-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .wordcloud-section {
+            flex: 2;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+        }
+        
+        .submit-btn {
+            background: #3498db;
+            color: white;
+        }
+        
+        .submit-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .clear-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .clear-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .wordcloud-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #wordcloud {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .tips {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fc;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+        
+        .tips h3 {
+            margin-bottom: 8px;
+            color: #3498db;
+        }
+        
+        .tips ul {
+            padding-left: 20px;
+        }
+        
+        .tips li {
+            margin-bottom: 5px;
+        }
+        
+        .opinion-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .opinion-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+        }
+        
+        .opinion-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .input-section, .wordcloud-section {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>意見收集與文字雲生成器</h1>
+            <p class="subtitle">收集用戶意見，並將關鍵詞以視覺化方式呈現</p>
+        </header>
+        
+        <div class="app-container">
+            <section class="input-section">
+                <h2 class="section-title">提交您的意見</h2>
+                <textarea id="opinion-input" placeholder="請輸入您的意見或建議..."></textarea>
+                
+                <div class="btn-group">
+                    <button class="submit-btn" id="submit-btn">提交意見</button>
+                    <button class="clear-btn" id="clear-btn">清除所有</button>
+                </div>
+                
+                <div class="opinion-list" id="opinion-list">
+                    <!-- 意見列表將在這裡顯示 -->
+                </div>
+                
+                <div class="tips">
+                    <h3>使用提示：</h3>
+                    <ul>
+                        <li>輸入您的意見或建議，點擊"提交意見"按鈕</li>
+                        <li>文字雲會根據意見中的詞彙頻率自動生成</li>
+                        <li>詞彙出現越頻繁，在文字雲中顯示越大</li>
+                        <li>點擊"清除所有"按鈕可以重置所有意見</li>
+                    </ul>
+                </div>
+            </section>
+            
+            <section class="wordcloud-section">
+                <h2 class="section-title">意見文字雲</h2>
+                <div class="wordcloud-container">
+                    <canvas id="wordcloud"></canvas>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // 存儲意見的陣列
+        let opinions = [];
+        
+        // DOM 元素
+        const opinionInput = document.getElementById('opinion-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const opinionList = document.getElementById('opinion-list');
+        const wordcloudCanvas = document.getElementById('wordcloud');
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 從本地存儲加載意見
+            loadOpinionsFromStorage();
+            
+            // 綁定事件
+            submitBtn.addEventListener('click', submitOpinion);
+            clearBtn.addEventListener('click', clearAllOpinions);
+            
+            // 初始生成文字雲
+            generateWordCloud();
+        });
+        
+        // 提交意見
+        function submitOpinion() {
+            const text = opinionInput.value.trim();
+            
+            if (text === '') {
+                alert('請輸入意見內容！');
+                return;
+            }
+            
+            // 添加到意見陣列
+            opinions.push(text);
+            
+            // 清空輸入框
+            opinionInput.value = '';
+            
+            // 更新顯示
+            updateOpinionList();
+            
+            // 保存到本地存儲
+            saveOpinionsToStorage();
+            
+            // 重新生成文字雲
+            generateWordCloud();
+        }
+        
+        // 更新意見列表顯示
+        function updateOpinionList() {
+            opinionList.innerHTML = '';
+            
+            if (opinions.length === 0) {
+                opinionList.innerHTML = '<div class="opinion-item">暫無意見</div>';
+                return;
+            }
+            
+            opinions.forEach((opinion, index) => {
+                const item = document.createElement('div');
+                item.className = 'opinion-item';
+                item.textContent = `${index + 1}. ${opinion}`;
+                opinionList.appendChild(item);
+            });
+        }
+        
+        // 清除所有意見
+        function clearAllOpinions() {
+            if (opinions.length === 0) {
+                alert('目前沒有意見可清除！');
+                return;
+            }
+            
+            if (confirm('確定要清除所有意見嗎？此操作無法復原。')) {
+                opinions = [];
+                updateOpinionList();
+                saveOpinionsToStorage();
+                generateWordCloud();
+            }
+        }
+        
+        // 保存意見到本地存儲
+        function saveOpinionsToStorage() {
+            localStorage.setItem('opinions', JSON.stringify(opinions));
+        }
+        
+        // 從本地存儲加載意見
+        function loadOpinionsFromStorage() {
+            const storedOpinions = localStorage.getItem('opinions');
+            if (storedOpinions) {
+                opinions = JSON.parse(storedOpinions);
+                updateOpinionList();
+            } else {
+                updateOpinionList();
+            }
+        }
+        
+        // 生成文字雲
+        function generateWordCloud() {
+            // 清除畫布
+            const ctx = wordcloudCanvas.getContext('2d');
+            ctx.clearRect(0, 0, wordcloudCanvas.width, wordcloudCanvas.height);
+            
+            // 如果沒有意見，顯示提示
+            if (opinions.length === 0) {
+                ctx.font = '20px Arial';
+                ctx.fillStyle = '#aaa';
+                ctx.textAlign = 'center';
+                ctx.fillText('暫無意見數據', wordcloudCanvas.width/2, wordcloudCanvas.height/2);
+                return;
+            }
+            
+            // 合併所有意見文本
+            const allText = opinions.join(' ');
+            
+            // 簡單的詞頻統計（這裡使用簡化的中文分詞）
+            const wordFreq = {};
+            const words = allText.split(/[\s,，.。!！?？;；:：、]+/);
+            
+            words.forEach(word => {
+                if (word.length > 1) { // 忽略單個字符
+                    wordFreq[word] = (wordFreq[word] || 0) + 1;
+                }
+            });
+            
+            // 轉換為文字雲需要的格式
+            const wordCloudData = Object.keys(wordFreq).map(word => ({
+                text: word,
+                size: 20 + wordFreq[word] * 10 // 根據頻率調整字體大小
+            }));
+            
+            // 簡單的文字雲算法
+            drawWordCloud(wordCloudData);
+        }
+        
+        // 繪製文字雲
+        function drawWordCloud(wordCloudData) {
+            const ctx = wordcloudCanvas.getContext('2d');
+            const centerX = wordcloudCanvas.width / 2;
+            const centerY = wordcloudCanvas.height / 2;
+            
+            // 設置畫布大小
+            wordcloudCanvas.width = wordcloudCanvas.offsetWidth;
+            wordcloudCanvas.height = wordcloudCanvas.offsetHeight;
+            
+            // 清除畫布
+            ctx.clearRect(0, 0, wordcloudCanvas.width, wordcloudCanvas.height);
+            
+            // 如果沒有數據，顯示提示
+            if (wordCloudData.length === 0) {
+                ctx.font = '20px Arial';
+                ctx.fillStyle = '#aaa';
+                ctx.textAlign = 'center';
+                ctx.fillText('暫無意見數據', centerX, centerY);
+                return;
+            }
+            
+            // 按大小排序
+            wordCloudData.sort((a, b) => b.size - a.size);
+            
+            // 顏色方案
+            const colors = ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#d35400'];
+            
+            // 繪製文字
+            const maxRadius = Math.min(centerX, centerY) * 0.8;
+            
+            wordCloudData.forEach((wordObj, index) => {
+                const angle = (index / wordCloudData.length) * 2 * Math.PI;
+                const radius = maxRadius * (index / wordCloudData.length);
+                
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                
+                // 設置字體和顏色
+                ctx.font = `${wordObj.size}px Arial`;
+                ctx.fillStyle = colors[index % colors.length];
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // 繪製文字
+                ctx.fillText(wordObj.text, x, y);
+            });
+        }
+        
+        // 視窗大小改變時重新生成文字雲
+        window.addEventListener('resize', generateWordCloud);
+    </script>
+</body>
+</html>
